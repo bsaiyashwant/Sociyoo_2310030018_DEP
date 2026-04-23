@@ -6,7 +6,6 @@
 ![Flask](https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white)
 ![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.4-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
 ![Chart.js](https://img.shields.io/badge/Chart.js-4.x-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 **An ML-powered sentiment intelligence dashboard for monitoring brand reputation across five social media platforms in real time.**
 
@@ -51,125 +50,6 @@ The performance section shows ensemble accuracy, per-algorithm comparison (horiz
 ### Prerequisites
 - Python 3.9 or higher
 - pip (Python package manager)
-
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/bsaiyashwant/brand_sentiment_analysis.git
-cd brand_sentiment_analysis
-
-# 2. Create a virtual environment
-python -m venv .venv
-
-# 3. Activate it
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Run the application
-python app.py
-```
-
-The app will start at **http://127.0.0.1:5000** 🎉
-
-### Environment Variables (Optional)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `5000` | Server port |
-| `FLASK_ENV` | `development` | Set to `production` for production mode |
-| `FLASK_SECRET_KEY` | `sociyoo-dev-...` | Secret key for sessions (change in production) |
-
----
-
-## 🔌 API Endpoint
-
-### `POST /api/predict`
-
-Programmatically classify sentiment for any social media text.
-
-**Request:**
-
-```bash
-curl -X POST http://127.0.0.1:5000/api/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "twitter",
-    "brand": "BrandA",
-    "text": "I love the new update, it works perfectly"
-  }'
-```
-
-**Response:**
-
-```json
-{
-  "platform": "twitter",
-  "brand": "BrandA",
-  "text": "I love the new update, it works perfectly",
-  "predicted_sentiment": "positive",
-  "confidence": {
-    "positive": 0.87,
-    "neutral": 0.09,
-    "negative": 0.04
-  },
-  "per_model": {
-    "Logistic Regression": { "label": "positive", "probabilities": { ... } },
-    "Multinomial Naive Bayes": { "label": "positive", "probabilities": { ... } },
-    "Support Vector Machine": { "label": "positive", "probabilities": { ... } }
-  }
-}
-```
-
-### `GET /health`
-
-Health check for monitoring / deployment.
-
-```json
-{
-  "status": "healthy",
-  "models_loaded": 3,
-  "training_samples": 215
-}
-```
-
----
-
-## 🏗 Architecture
-
-```mermaid
-graph TB
-    subgraph Frontend
-        A[Browser / UI] -->|Form POST| B[Flask Routes]
-        A -->|GET /api/predict| B
-    end
-
-    subgraph Backend
-        B --> C[TF-IDF Vectorizer]
-        C --> D[Logistic Regression]
-        C --> E[Multinomial NB]
-        C --> F[SVM Linear]
-        D --> G[Majority Vote Ensemble]
-        E --> G
-        F --> G
-    end
-
-    subgraph Visualization
-        G --> H[Chart.js Bar Chart]
-        G --> I[Chart.js Line Chart]
-        G --> J[Chart.js Doughnut]
-        G --> K[Accuracy Bar Chart]
-    end
-
-    style A fill:#6366f1,stroke:#4f46e5,color:#fff
-    style G fill:#22d3ee,stroke:#06b6d4,color:#000
-    style B fill:#a855f7,stroke:#9333ea,color:#fff
-```
 
 ---
 
@@ -247,12 +127,4 @@ brand_sentiment_analysis/
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-**Built with ❤️ using Flask, Scikit-learn & Chart.js**
-
-</div>
+This project is licensed under the copyrights to Balivada Sai Yashwant
