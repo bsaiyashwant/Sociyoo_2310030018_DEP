@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} · Social Media Sentiment Intelligence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Sociyoo is an ML-powered sentiment analysis dashboard for monitoring brand reputation across Instagram, Twitter, WhatsApp, Facebook and Telegram in real time.">
+    <meta name="keywords" content="sentiment analysis, brand monitoring, NLP, machine learning, social media analytics">
+    <meta name="author" content="Sociyoo">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Animated background orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <header class="header" id="site-header">
+        <div class="container header-inner">
+            <div class="header-title-group">
+                <div class="logo-mark" aria-hidden="true">📊</div>
+                <div>
+                    <h1>{{ app_name }}</h1>
+                    <h2>Real-time sentiment insights from Instagram, Twitter, WhatsApp, Facebook &amp; Telegram</h2>
+                </div>
+            </div>
+            <div class="header-badge">
+                <span class="badge-pill">ML-powered · NLP · Opinion Mining</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Platform navigation pills -->
+    <nav class="platform-nav" id="platform-nav">
+        <div class="container platform-nav-inner">
+            {% for p in platforms %}
+                <a href="/?platform={{ p }}"
+                   class="nav-pill {% if p == selected_platform %}nav-pill--active{% endif %}"
+                   id="nav-{{ p }}">
+                    <span class="nav-pill-icon">
+                        {% if p == 'instagram' %}📷{% elif p == 'twitter' %}🐦{% elif p == 'whatsapp' %}💬{% elif p == 'facebook' %}👤{% elif p == 'telegram' %}✈️{% endif %}
+                    </span>
+                    {{ p|capitalize }}
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <!-- Abstract -->
+        <section class="card fade-in" id="abstract-card">
+            <h3>
+                <span class="section-icon">📄</span>
+                Project Abstract
+            </h3>
+            <p>{{ abstract_text }}</p>
+            <p class="keywords">
+                <strong>Keywords:</strong>
+                {% for k in keywords %}
+                    <span class="keyword">{{ k }}</span>
+                {% endfor %}
+            </p>
+        </section>
+
+        <!-- Main content layout -->
+        <section class="layout">
+            <div class="layout-main">
+
+                <!-- Interactive Classification Form -->
+                <section class="card fade-in" id="classify-card">
+                    <h3>
+                        <span class="section-icon">🔍</span>
+                        Interactive Sentiment Classification
+                    </h3>
+                    <form method="post" class="form" id="sentiment-form">
+                        <div class="field-grid">
+                            <div class="field">
+                                <label for="platform">Social media platform</label>
+                                <select id="platform" name="platform" class="select">
+                                    {% for p in platforms %}
+                                        <option value="{{ p }}" {% if p == selected_platform %}selected{% endif %}>
+                                            {{ p|capitalize }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="brand">Brand name (optional)</label>
+                                <input id="brand" name="brand" type="text" placeholder="e.g. BrandA">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="text">Social media message</label>
+                            <textarea id="text" name="text" rows="4" placeholder="Paste a post, tweet or message about the brand"></textarea>
+                        </div>
+                        <button type="submit" id="analyse-btn">
+                            <span class="btn-text">Analyse Sentiment</span>
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+
+                    {% if user_result %}
+                        <div class="result fade-in" id="prediction-result">
+                            <h4>
+                                <span class="section-icon">✅</span>
+                                Prediction Result
+                            </h4>
+                            <div class="result-grid">
+                                <div class="result-item">
+                                    <span class="result-label">Platform</span>
+                                    <span class="pill pill-platform">{{ user_result.platform|capitalize }}</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Brand</span>
+                                    <span class="result-value">{{ user_result.brand }}</span>
+                                </div>
+                                <div class="result-item result-item--full">
+                                    <span class="result-label">Text</span>
+                                    <span class="result-value result-text">"{{ user_result.text }}"</span>
+                                </div>
+                                <div class="result-item result-item--full">
+                                    <span class="result-label">Predicted Sentiment</span>
+                                    <span class="pill pill-{{ user_result.predicted_label }} pill-lg">{{ user_result.predicted_label|capitalize }}</span>
+                                </div>
+                            </div>
+
+                            <div class="result-details">
+                                <div class="result-detail-block">
+                                    <h5>Class Probabilities</h5>
+                                    <div class="prob-bars">
+                                        {% for label, prob in user_result.probabilities.items() %}
+                                            <div class="prob-row">
+                                                <span class="prob-label">{{ label|capitalize }}</span>
+                                                <div class="prob-track">
+                                                    <div class="prob-fill prob-fill--{{ label }}" style="width: {{ (prob * 100)|round(1) }}%"></div>
+                                                </div>
+                                                <span class="prob-value">{{ "%.1f"|format(prob * 100) }}%</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="result-detail-block">
+                                    <h5>Algorithm-wise Predictions</h5>
+                                    <div class="algo-grid">
+                                        {% for name, info in user_result.per_model.items() %}
+                                            <div class="algo-chip">
+                                                <span class="algo-name">{{ name }}</span>
+                                                <span class="pill pill-{{ info.label }} pill-sm">{{ info.label|capitalize }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </section>
+            </div>
+
+            <!-- Sidebar charts -->
+            <aside class="layout-side">
+                <section class="card fade-in" id="brand-chart-card">
+                    <h3>
+                        <span class="section-icon">📊</span>
+                        Brand-Level Sentiment Summary
+                    </h3>
+                    <p class="small-text">
+                        Platform: <span class="pill pill-platform">{{ selected_platform|capitalize }}</span>
+                    </p>
+                    <canvas id="brandChart"></canvas>
+                </section>
+
+                <section class="card fade-in" id="trend-chart-card">
+                    <h3>
+                        <span class="section-icon">📈</span>
+                        Sentiment Trend Over Time
+                    </h3>
+                    <p class="small-text">
+                        Each point represents a processed social media post in chronological order.
+                        Positive scores indicate favourable mood, negative scores indicate dissatisfaction.
+                    </p>
+                    <canvas id="trendChart"></canvas>
+                </section>
+            </aside>
+        </section>
+
+        <!-- Model Performance Section -->
+        <section class="card fade-in" id="performance-card">
+            <h3>
+                <span class="section-icon">⚙️</span>
+                Model Performance &amp; Dataset Overview
+            </h3>
+            <div class="metrics-grid">
+                <div class="metric-card metric-card--accent">
+                    <div class="metric-number">{{ "%.1f"|format(training_accuracy * 100) }}%</div>
+                    <div class="metric-desc">Ensemble Accuracy</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">{{ training_samples }}</div>
+                    <div class="metric-desc">Training Samples</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">3</div>
+                    <div class="metric-desc">ML Algorithms</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">{{ platforms|length }}</div>
+                    <div class="metric-desc">Platforms</div>
+                </div>
+            </div>
+
+            <div class="perf-charts-grid">
+                <div>
+                    <h4>Algorithm Accuracy Comparison</h4>
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+                <div>
+                    <h4>Training Data Distribution</h4>
+                    <canvas id="distChart"></canvas>
+                </div>
+            </div>
+
+            <div class="tech-details">
+                <h4>Technical Details</h4>
+                <ul class="bullets">
+                    <li>Ensemble accuracy: <strong>{{ "%.1f"|format(training_accuracy * 100) }}%</strong> on {{ training_samples }} labelled posts.</li>
+                    <li>Algorithm-wise accuracy:
+                        {% for name, acc in training_accuracy_per_model.items() %}
+                            {{ name }} <strong>{{ "%.1f"|format(acc * 100) }}%</strong>{% if not loop.last %}, {% endif %}
+                        {% endfor %}.
+                    </li>
+                    {% if cv_scores %}
+                    <li>Cross-validation scores (5-fold):
+                        {% for name, score in cv_scores.items() %}
+                            {{ name }} <strong>{{ "%.1f"|format(score * 100) }}%</strong>{% if not loop.last %}, {% endif %}
+                        {% endfor %}.
+                    </li>
+                    {% endif %}
+                    <li>Class balance: Positive {{ label_distribution.positive }}, Neutral {{ label_distribution.neutral }}, Negative {{ label_distribution.negative }}.</li>
+                    <li>Text features extracted using <strong>TF–IDF</strong> (uni‑grams and bi‑grams).</li>
+                    <li>Ensemble uses <strong>majority voting</strong> across all three classifiers.</li>
+                    <li>REST API available at <code>/api/predict</code> for programmatic access.</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer" id="site-footer">
+        <div class="container footer-inner">
+            <p>{{ app_name }} · Brand Sentiment Analysis</p>
+            <p class="footer-tech">Built with Flask · Scikit-learn · Chart.js</p>
+        </div>
+    </footer>
+
+    <script>
+        /* ------------------------------------------------------------------ */
+        /* Fade-in animation on scroll                                        */
+        /* ------------------------------------------------------------------ */
+        const fadeEls = document.querySelectorAll('.fade-in');
+        const fadeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                    fadeObserver.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.08 });
+        fadeEls.forEach(el => fadeObserver.observe(el));
+
+        /* ------------------------------------------------------------------ */
+        /* Loading spinner on submit                                          */
+        /* ------------------------------------------------------------------ */
+        const form = document.getElementById('sentiment-form');
+        if (form) {
+            form.addEventListener('submit', () => {
+                const btn = document.getElementById('analyse-btn');
+                btn.classList.add('loading');
+            });
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* Chart.js — Brand Sentiment Bar Chart                               */
+        /* ------------------------------------------------------------------ */
+        const brandSummary = {{ brand_summary | tojson }};
+        const trendData = {{ trend_data_json | safe }};
+        const selectedPlatform = "{{ selected_platform }}";
+
+        const chartFont = { family: "'Inter', sans-serif" };
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        const brands = Object.keys(brandSummary);
+        const positives = brands.map(b => brandSummary[b].positive);
+        const neutrals = brands.map(b => brandSummary[b].neutral);
+        const negatives = brands.map(b => brandSummary[b].negative);
+
+        const brandCtx = document.getElementById('brandChart');
+        new Chart(brandCtx, {
+            type: 'bar',
+            data: {
+                labels: brands,
+                datasets: [
+                    { label: 'Positive', data: positives, backgroundColor: 'rgba(52, 211, 153, 0.85)', borderRadius: 6 },
+                    { label: 'Neutral', data: neutrals, backgroundColor: 'rgba(251, 191, 36, 0.85)', borderRadius: 6 },
+                    { label: 'Negative', data: negatives, backgroundColor: 'rgba(248, 113, 113, 0.85)', borderRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        titleFont: { weight: '600' },
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: {
+                            title: ctx => 'Brand: ' + ctx[0].label + ' · ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1)
+                        }
+                    },
+                    legend: { labels: { color: '#e5e7eb', padding: 16, usePointStyle: true, pointStyle: 'circle' } },
+                    title: { display: true, text: 'Brand sentiment on ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1), color: '#a5b4fc', font: { size: 14, weight: '600' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                    y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }
+                }
+            }
+        });
+
+        /* ------------------------------------------------------------------ */
+        /* Chart.js — Sentiment Trend Line Chart                              */
+        /* ------------------------------------------------------------------ */
+        const trendCtx = document.getElementById('trendChart');
+        const trendLabels = trendData.map(p => p.index);
+        const trendScores = trendData.map(p => p.score);
+        const trendColors = trendScores.map(s => s > 0 ? 'rgba(52, 211, 153, 0.9)' : s < 0 ? 'rgba(248, 113, 113, 0.9)' : 'rgba(251, 191, 36, 0.9)');
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Sentiment Score (' + selectedPlatform + ')',
+                    data: trendScores,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: trendColors,
+                    pointBorderColor: 'rgba(255,255,255,0.3)',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: '#f97316',
+                    borderWidth: 2.5
+                }]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'nearest', intersect: true },
+                plugins: {
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: {
+                            title: ctx => 'Post ' + ctx[0].label + ' on ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1),
+                            label: ctx => {
+                                const point = trendData[ctx.dataIndex];
+                                return 'Brand: ' + point.brand + ' · ' + point.label + ' (score ' + ctx.formattedValue + ')';
+                            }
+                        }
+                    },
+                    legend: { labels: { color: '#e5e7eb', usePointStyle: true } },
+                    title: { display: true, text: 'Sentiment trend over time', color: '#a5b4fc', font: { size: 14, weight: '600' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                    y: { suggestedMin: -1, suggestedMax: 1, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }
+                }
+            }
+        });
+
+        /* ------------------------------------------------------------------ */
+        /* Chart.js — Model Accuracy Horizontal Bar                           */
+        /* ------------------------------------------------------------------ */
+        const accData = {{ training_accuracy_per_model | tojson }};
+        const accNames = Object.keys(accData);
+        const accValues = accNames.map(n => (accData[n] * 100).toFixed(1));
+        const accCtx = document.getElementById('accuracyChart');
+        new Chart(accCtx, {
+            type: 'bar',
+            data: {
+                labels: accNames,
+                datasets: [{
+                    label: 'Accuracy %',
+                    data: accValues,
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(236, 72, 153, 0.8)'
+                    ],
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        cornerRadius: 8,
+                        callbacks: { label: ctx => ctx.formattedValue + '% accuracy' }
+                    }
+                },
+                scales: {
+                    x: { min: 0, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+                    y: { ticks: { color: '#e5e7eb', font: { size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
+
+        /* ------------------------------------------------------------------ */
+        /* Chart.js — Class Distribution Doughnut                             */
+        /* ------------------------------------------------------------------ */
+        const distData = {{ label_distribution | tojson }};
+        const distCtx = document.getElementById('distChart');
+        new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Positive', 'Neutral', 'Negative'],
+                datasets: [{
+                    data: [distData.positive, distData.neutral, distData.negative],
+                    backgroundColor: ['rgba(52, 211, 153, 0.85)', 'rgba(251, 191, 36, 0.85)', 'rgba(248, 113, 113, 0.85)'],
+                    borderColor: 'rgba(15,23,42,0.8)',
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '60%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#e5e7eb', padding: 16, usePointStyle: true, pointStyle: 'circle' } },
+                    tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', cornerRadius: 8 }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
